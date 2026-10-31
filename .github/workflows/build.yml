@@ -41,6 +41,10 @@ jobs:
       - name: Apply Patches (g615-v11-csf)
         run: ./scripts/apply-patches.sh --profile g615-v11-csf
 
+      - name: Fix panvk_cmd_pool compile error
+        run: |
+          sed -i 's/pool->gs_bo_pool/pool->cs_bo_pool/g' work/mesa/src/panfrost/vulkan/panvk_cmd_pool.c
+
       - name: Compile Android Driver
         run: ./scripts/build-android.sh --profile g615-v11-csf
 
