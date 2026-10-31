@@ -50,20 +50,31 @@ jobs:
           python3 - << 'EOF'
           import os, glob, re
 
-          # --- أ) توسيع قائمة أسماء الـ Mapper في حال البحث عن mediatek فقط ---
+          # --- أ) توسيع قائمة أسماء الـ Mapper الآمنة (تفادي مشكلة عدد المعطيات) ---
           for root, _, files in os.walk("work/mesa/src"):
               for f in files:
                   if f.endswith((".c", ".cpp", ".h")):
                       p = os.path.join(root, f)
                       with open(p, "r", encoding="utf-8", errors="ignore") as fp:
                           txt = fp.read()
-                      if '"mediatek"' in txt and "mapper" in txt:
-                          # إضافة default و arm كمرشحين بجانب mediatek
-                          new_txt = txt.replace('"mediatek"', '"default", "mediatek", "mtk", "arm"')
-                          if new_txt != txt:
-                              with open(p, "w", encoding="utf-8") as fp:
-                                  fp.write(new_txt)
-                              print(f"[PATCHED] Added fallback mapper names in {p}")
+                      
+                      # سنبحث بدقة عن دالة إضافة الاسم ونقوم بتكرارها بشكل آمن لكل fallback
+                      if "add_name" in txt and '"mediatek"' in txt:
+                          pattern = r'(\w+add_name)\s*\(\s*(\w+)\s*,\s*&(\w+)\s*,\s*"mediatek"\s*,\s*8\s*\)\s*;'
+                          matches = re.findall(pattern, txt)
+                          if matches:
+                              # تكرار الدالة لتجنب دمج الكلمات في استدعاء واحد
+                              replacement = (
+                                  '\\1(\\2, &\\3, "default", 7);\n'
+                                  '    \\1(\\2, &\\3, "mediatek", 8);\n'
+                                  '    \\1(\\2, &\\3, "mtk", 3);\n'
+                                  '    \\1(\\2, &\\3, "arm", 3);'
+                              )
+                              new_txt = re.sub(pattern, replacement, txt)
+                              if new_txt != txt:
+                                  with open(p, "w", encoding="utf-8") as fp:
+                                      fp.write(new_txt)
+                                  print(f"[PATCHED] Safely expanded add_name fallbacks in {p}")
 
           # --- ب) إضافة مسار احتياطي (Fallback) في u_gralloc عند فشل قراءة الشاشة ---
           u_gralloc_path = "work/mesa/src/util/u_gralloc/u_gralloc.c"
@@ -95,7 +106,7 @@ jobs:
 
               helper_func = '''
           /* Helper: Find a free 32-bit virtual address (< 2GB) for WoW64 compatibility */
-          static void *pan_wow64_ enforce_low_mmap(void *placed_addr, size_t size, int prot, int flags, int fd, off_t offset) {
+          static void *pan_wow64_enforce_low_mmap(void *placed_addr, size_t size, int prot, int flags, int fd, off_t offset) {
               void *ret = MAP_FAILED;
               if (placed_addr != NULL) {
                   ret = os_mmap(placed_addr, size, prot, flags | MAP_FIXED, fd, offset);
@@ -125,7 +136,6 @@ jobs:
               return os_mmap(NULL, size, prot, flags, fd, offset);
           }
           '''
-              helper_func = helper_func.replace("pan_wow64_ enforce_low_mmap", "pan_wow64_enforce_low_mmap")
               if "pan_wow64_enforce_low_mmap" not in kcode:
                   # إدراج الدالة المساعدة بعد ملفات الـ include
                   insert_pos = kcode.rfind("#include")
