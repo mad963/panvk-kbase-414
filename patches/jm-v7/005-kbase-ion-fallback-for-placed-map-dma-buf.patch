@@ -168,3 +168,4 @@ index 8322de67327..fc46dcce332 100644
        mesa_loge("kbase: DMA_HEAP_IOCTL_ALLOC failed: %s", strerror(errno));
        return NULL;
     }
+    
