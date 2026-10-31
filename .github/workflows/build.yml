@@ -14,8 +14,8 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y meson ninja-build pkg-config python3-pip
-          pip3 install meson ninja
+          sudo apt-get install -y ninja-build pkg-config python3-pip
+          pip3 install meson==1.4.0 ninja
 
       - name: Verify sources.lock pinned
         run: python3 -c "import json; d=json.load(open('sources.lock')); print('OK')"
