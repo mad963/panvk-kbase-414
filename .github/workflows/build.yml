@@ -29,7 +29,7 @@ jobs:
             llvm-18-dev libclang-18-dev libclang-cpp18-dev \
             libclc-18-dev libllvmspirvlib-18-dev \
             libsensors-dev libvulkan-dev x11proto-dev linux-libc-dev \
-            python3-mako python3-ply python3-setuptools python3-packaging python3-pyyaml
+            python3-mako python3-ply python3-setuptools python3-packaging python3-yaml
           pip3 install meson==1.4.0 ninja
 
       - name: Verify sources.lock pinned
